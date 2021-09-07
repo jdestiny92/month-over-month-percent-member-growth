@@ -1,0 +1,40 @@
+WITH members AS
+(
+SELECT
+    date_trunc('month', a.date_joined) as "month"
+    , COUNT(a.id)
+FROM
+    account_account a
+WHERE
+    a.date_joined > 'October 16, 2019'
+    AND a.date_joined < date_trunc('MONTH', current_timestamp)
+GROUP BY
+    1
+ORDER BY
+    1 asc
+)
+
+, total_members_per_month AS
+(
+SELECT
+   m.month
+   , SUM(m.count) OVER (ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) AS "total_members"
+FROM
+    members m
+)
+
+
+, month_over_month_member_growth AS
+(
+SELECT
+    t.month
+    , ( (t.total_members) - ((CASE WHEN t.total_members > 3729 THEN lag(t.total_members, 1) OVER() END)) )::float 
+    / (CASE WHEN t.total_members > 3729 THEN lag(t.total_members, 1) OVER() END) AS "% Member Growth"
+FROM
+    total_members_per_month t
+)
+
+SELECT
+    *
+FROM
+    month_over_month_member_growth m
